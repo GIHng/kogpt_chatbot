@@ -2,19 +2,15 @@ import numpy as np
 import pandas as pd
 import torch
 import urllib.request
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.core.module import LightningModule
-from torch.utils.data import DataLoader, Dataset
-from transformers.optimization import AdamW, get_cosine_schedule_with_warmup
+from torch.utils.data import DataLoader
 from transformers import PreTrainedTokenizerFast, GPT2LMHeadModel
 import re
 import os
 from dataset import ChatbotDataset, collate_batch
 import datetime
 
-filename = "ChatBotData.csv"
-filepath = './' + filename
+csv_filename = "ChatBotData.csv"
+filepath = './' + csv_filename
 
 BOS = "</s>"
 EOS = "</s>"
@@ -32,12 +28,14 @@ model = GPT2LMHeadModel.from_pretrained('skt/kogpt2-base-v2')
 import urllib.request
 
 if not os.path.exists(filepath):
-    print(f"{filename} 파일을 다운로드합니다.")
+    print(f"{csv_filename} 파일을 다운로드합니다.")
     urllib.request.urlretrieve(
         "https://raw.githubusercontent.com/songys/Chatbot_data/master/ChatbotData.csv",
-        filename = filename,
+        filename = csv_filename,
     )
 Chatbot_Data = pd.read_csv("ChatbotData.csv")
+
+Chatbot_Data = Chatbot_Data[:300]
 
 device = torch.device("cpu")
 
@@ -72,21 +70,23 @@ for epoch in range(num_epochs):
 
         optimizer.step()
 
-        print(f"Epoch [{epoch+1}/{num_epochs}], Step [{batch_idx+1}/{len(train_dataloader)}], Loss: {avg_loss.item():.4f}")
-
-    
+        print(f"Epoch [{epoch+1}/{num_epochs}], Step [{batch_idx+1}/{len(train_dataloader)}], Loss: {avg_loss.item():.4f}")    
 print("=========== Train End ===========")
 
+base = 'kogpt2-base-v2-finetune.pth'
 
-current_time = datetime.now().strftime('%y%m%d%')
-base_filename = f'kogpt2-base-v2-finetune-{current_time}'
-extension = '.pth'
-
-counter = 0
-filename = f'{base_filename}{extension}'
-while os.path.exists(filename):
-    counter += 1
-    filename = f'{base_filename}-{counter}{extension}'
+try:
+    current_time = datetime.datetime.now().strftime('%y%m%d')
+    base_filename = f'kogpt2-base-v2-finetune-{current_time}'
+    extension = '.pth'
+    counter = 0
+    filename = f'{base_filename}{extension}'
+    while os.path.exists(filename):
+        counter += 1
+        filename = f'{base_filename}-{counter}{extension}'
+except Exception as e:
+    filename = base
+    print(e)
 
 torch.save(model.state_dict(), filename)
 
