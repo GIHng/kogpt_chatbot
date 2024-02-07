@@ -11,6 +11,7 @@ from transformers import PreTrainedTokenizerFast, GPT2LMHeadModel
 import re
 import os
 from dataset import ChatbotDataset, collate_batch
+import datetime
 
 filename = "ChatBotData.csv"
 filepath = './' + filename
@@ -75,6 +76,20 @@ for epoch in range(num_epochs):
 
     
 print("=========== Train End ===========")
+
+
+current_time = datetime.now().strftime('%y%m%d%')
+base_filename = f'kogpt2-base-v2-finetune-{current_time}'
+extension = '.pth'
+
+counter = 0
+filename = f'{base_filename}{extension}'
+while os.path.exists(filename):
+    counter += 1
+    filename = f'{base_filename}-{counter}{extension}'
+
+torch.save(model.state_dict(), filename)
+
 
 with torch.no_grad():
     while 1:
